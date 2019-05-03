@@ -77,7 +77,6 @@ public class Base64Demo {
         return Base64.encode(data);
     }
 
-
     /**
      * Base64解密
      * @param data
