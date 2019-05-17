@@ -3,7 +3,7 @@
 关于jvm内存模型的具体总结，这篇博客有详细的总结：
 [jvm内存区域](https://blog.csdn.net/weixin_41922289/article/details/89184550)
 
-![](https://mmbiz.qpic.cn/mmbiz_png/PgqYrEEtEnoUSbbnzEiafyyQWUibOfnE3G1sZG1aJZSakhFe5d6QeiciaO9ZIDfHrFS9UZx8RfWfkPk9UZLCVdcriaQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+![](https://images2015.cnblogs.com/blog/1006828/201706/1006828-20170626190944430-2098579049.png)
 
 我们主要关注jvm中最主要的三块内存 --- 堆，栈，方法区，而最容易最经常出现的内存错误OutOfMemoryError就很经常的很频繁的出现在这三个区域，因而，值得我们深究
 
