@@ -85,6 +85,16 @@ public class QiniuUtils {
 }
 ```
 
+关于地区的编码 可查看官方文档[七牛云](https://developer.qiniu.com/kodo/manual/1671/region-endpoint)
+
+```java
+        // 构造一个带指定Zone对象的配置类, 注意这里的Zone.zone0需要根据主机选择
+        Configuration cfg = new Configuration(Zone.zone2());
+```
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190518153236593.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80MTkyMjI4OQ==,size_16,color_FFFFFF,t_70)
+
+
 4.controller层编写
 ```java
 @Slf4j
