@@ -96,9 +96,10 @@ ICMP允许主机或者路由器报告差错情况和有关异常情况的报告
 
 ## IGMP协议
 
-我看不懂hhh
+参考
 
 [IGMP详解](http://network.51cto.com/art/201901/590835.htm)
+
 
 # 三，IP数据报
 
