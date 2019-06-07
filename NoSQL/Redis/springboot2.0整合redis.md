@@ -113,4 +113,72 @@ public class SimpleCacheErrorHandler implements CacheErrorHandler {
     }
 ```
 
+### KeyGenerator
+
+缓存key生成器，定义了缓存key的生成方法
+```java
+@FunctionalInterface
+public interface KeyGenerator {
+    Object generate(Object var1, Method var2, Object... var3);
+}
+```
+spring cache缓存的默认key生成策略是SimpleKeyGenerator
+
+```java
+public class SimpleKeyGenerator implements KeyGenerator {
+    public SimpleKeyGenerator() {
+    }
+
+    public Object generate(Object target, Method method, Object... params) {
+        return generateKey(params);
+    }
+
+    //生成key
+    public static Object generateKey(Object... params) {
+        //没有方法参数：key = 0
+        if (params.length == 0) {
+            return SimpleKey.EMPTY;
+        } else {
+            //参数个数为1：key = 第一个参数
+            if (params.length == 1) {
+                Object param = params[0];
+                if (param != null && !param.getClass().isArray()) {
+                    return param;
+                }
+            }
+            //如果参数多于一个的话则使用所有参数的hashCode作为key。
+            return new SimpleKey(params);
+        }
+    }
+}
+```
+场景：当我们先调用了getModel1(1)，ehcache就会将方法的返回结果以"1"为key放入缓存中，当我们再调用getModel2(1)时，ehcache就会从缓存中找key为"1"的数据(即 Model1 )并试图将它转换为Model2 ，这就出现了异常:  Model1 can not be cast to Model2.....所以我们需要自定义key策略来解决这个问题，将类名和方法名和参数列表一起来生成key，下面是自定义的Key生成代码：
+```java
+    /**
+     * 自定义key生成器
+     *
+     * key ---> hashCode( 类名（class）+ 方法名（method)+ 所有参数（params）)
+     * @return
+     */
+    @Bean
+    @Override
+    public KeyGenerator keyGenerator() {
+        return (target,method,params)->{
+            // 采取拼接的方式生成key
+            StringBuilder stringBuilder = new StringBuilder();
+            // 目标类的类名
+            stringBuilder.append(target.getClass().getName());
+            stringBuilder.append(":");
+            // 目标方法名
+            stringBuilder.append(method.getName());
+            // 参数
+            for(Object object : params){
+                stringBuilder.append(":"+String.valueOf(object));
+            }
+            String result = String.valueOf(stringBuilder.hashCode());
+            log.info("自定义的key为："+result);
+            return result;
+        };
+    }
+```
 
