@@ -1,10 +1,14 @@
-# 一
+# 一，spring cache
 
-# 二，springboot2.0整合redis手动配置
+## 简介
 
-## 新建redis配置类RedisConfig
+注解驱动的缓存
 
-### 1.继承 CachingConfigurerSupport类完成对redis的基本配置
+# 二，springboot2.0整合spring cache + redis手动配置
+
+## 1.新建redis配置类RedisConfig
+
+### 继承 CachingConfigurerSupport类完成对redis的基本配置
 ```java
 public class CachingConfigurerSupport implements CachingConfigurer {
     public CachingConfigurerSupport() {
@@ -113,7 +117,7 @@ public class SimpleCacheErrorHandler implements CacheErrorHandler {
     }
 ```
 
-### KeyGenerator
+#### KeyGenerator
 
 缓存key生成器，定义了缓存key的生成方法
 ```java
@@ -182,3 +186,168 @@ public class SimpleKeyGenerator implements KeyGenerator {
     }
 ```
 
+#### cacheManager
+如果需要Spring缓存可以正常工作，必须配置一个CacheManager。
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190611221158541.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80MTkyMjI4OQ==,size_16,color_FFFFFF,t_70)
+CacheManager简单描述就是用来存放Cache，Cache用于存放具体的key-value值
+
+在我们没有配置cacheConfiguration时，默认使用的是SimpleCacheConfiguration，其缓存管理器是ConcurrentMapCacheManager
+
+```java
+ @Bean
+    public ConcurrentMapCacheManager cacheManager() {
+        ConcurrentMapCacheManager cacheManager = new ConcurrentMapCacheManager();
+        List<String> cacheNames = this.cacheProperties.getCacheNames();
+        if (!cacheNames.isEmpty()) {
+            cacheManager.setCacheNames(cacheNames);
+        }
+
+        return (ConcurrentMapCacheManager)this.customizerInvoker.customize(cacheManager);
+    }
+```
+ConcurrentMapCacheManager通过一个ConcurrentMap作为缓存容器存放缓存
+```java
+ConcurrentMap<String, Cache> cacheMap = new ConcurrentHashMap(16);
+```
+查询缓存cache时根据cacheName去取缓存
+```java
+    @Nullable
+    public Cache getCache(String name) {
+        Cache cache = (Cache)this.cacheMap.get(name);
+        if (cache == null && this.dynamic) {
+            ConcurrentMap var3 = this.cacheMap;
+            synchronized(this.cacheMap) {
+                cache = (Cache)this.cacheMap.get(name);
+                if (cache == null) {
+                    cache = this.createConcurrentMapCache(name);
+                    this.cacheMap.put(name, cache);
+                }
+            }
+        }
+
+        return cache;
+    }
+```
+
+所以我们定义一个RedisCacheManager目的就是为了操作redisCache（cache接口实现类）
+
+```java
+    /**
+     * 自定义缓存管理器
+     * @param factory   自动注入spring容器中的jedisConnectionFactory
+     * @return
+     */
+    @Bean
+    public CacheManager cacheManager(JedisConnectionFactory factory) {
+        RedisSerializer<String> redisSerializer = new StringRedisSerializer();
+        FastJsonRedisSerializer fastJsonRedisSerializer = new FastJsonRedisSerializer(Object.class);
+
+        // 配置序列化（解决乱码的问题）
+        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+                // 7 天缓存过期
+                .entryTtl(Duration.ofDays(7))
+                // key序列化
+                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(redisSerializer))
+                // 值序列化
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(fastJsonRedisSerializer))
+                // 不缓存空值
+                .disableCachingNullValues();
+        // 通过连接工厂构建缓存管理器
+        RedisCacheManager cacheManager = RedisCacheManager.builder(factory)
+                // 注入配置
+                .cacheDefaults(config)
+                .build();
+        return cacheManager;
+    }
+```
+
+## 2.使用基于注解的缓存
+
+缓存注解功能不止如此，需要时网上查阅
+
+```java
+@Service
+public class SpringCacheServiceImpl implements SpringCacheService{
+
+    /**
+     * 新增缓存
+     * @param age
+     * @return
+     */
+    @Override
+    @Cacheable(key = "#result.name", cacheNames = "user")
+    public User insertUser(int age) {
+
+        User user = new User();
+        user.setAge(age);
+        user.setName("kevin123");
+        System.out.println("adwada");
+        return user;
+    }
+
+    /**
+     * 更新缓存
+     * @param user
+     * @return
+     */
+    @CachePut(key = "#user.age",cacheNames = "user")
+    @Override
+    public User updateUser(User user) {
+
+        user.setName("kevin12453");
+        System.out.println("adwada");
+        return user;
+    }
+
+    /**
+     * 删除缓存
+     * @param age
+     * @return
+     */
+    @CacheEvict(key = "#p0",cacheNames = "user")
+    @Override
+    public int deleteUser(int age) {
+        System.out.println("删除成功");
+        return 0;
+    }
+
+
+    /**
+     * 多种缓存规则
+     * @param age
+     * @return
+     */
+    @Caching(cacheable = {
+            @Cacheable(key = "#age",cacheNames = "user")
+    },put = {
+            @CachePut(key = "#result.name",cacheNames = "user")
+    })
+    @Override
+    public User selectUser(int age) {
+
+        User user = new User();
+        user.setAge(age);
+        user.setName("kevin123233");
+        System.out.println("adwadawdawdawa");
+        return user;
+    }
+}
+```
+
+
+缓存结果：
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190611225927416.png)
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190611230117536.png)
+
+## 3.注意问题
+
+###  @Cacheable注解不生效问题
+
+ @Cacheable注解中：一个方法A调同一个类里的另一个有缓存注解的方法B，这样是不走缓存的。例如在同一个service里面两个方法的调用，缓存是不生效的
+
+**为什么缓存没有被正常创建？？**
+
+因为@Cacheable 是使用AOP 代理实现的 ，通过创建内部类来代理缓存方法，这样就会导致一个问题，类内部的方法调用类内部的缓存方法不会走代理，不会走代理，就不能正常创建缓存，所以每次都需要去调用数据库。
