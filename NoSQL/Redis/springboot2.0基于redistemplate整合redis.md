@@ -27,10 +27,6 @@ spring-data-redis 中的核心操作类是 RedisTemplate，是操作redis实现�
             <!-- 1.5的版本默认采用的连接池技术是jedis  2.0以上版本默认连接池是lettuce, 在这里采用jedis，所以需要排除lettuce的jar -->
             <exclusions>
                 <exclusion>
-                    <groupId>redis.clients</groupId>
-                    <artifactId>jedis</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>io.lettuce</groupId>
                     <artifactId>lettuce-core</artifactId>
                 </exclusion>
@@ -138,21 +134,22 @@ public class RedisConfig extends CachingConfigurerSupport {
     private RedisTemplate redisTemplate;
 
     /**
-     * redisTemplate
+     * redisTemplate配置
      *
      * @return
      */
     @Bean
     public RedisTemplate redisTemplate(JedisConnectionFactory jedisConnectionFactory) {
+        RedisSerializer<String> stringRedisSerializer = new StringRedisSerializer();
         FastJsonRedisSerializer redisSerializer = new FastJsonRedisSerializer(Object.class);
         //配置默认序列化
         redisTemplate.setDefaultSerializer(redisSerializer);
         redisTemplate.setEnableDefaultSerializer(true);
         //配置序列化策略
-        redisTemplate.setKeySerializer(redisSerializer);
+        redisTemplate.setKeySerializer(stringRedisSerializer);
         redisTemplate.setValueSerializer(redisSerializer);
         redisTemplate.setHashValueSerializer(redisSerializer);
-        redisTemplate.setHashKeySerializer(redisSerializer);
+        redisTemplate.setHashKeySerializer(stringRedisSerializer);
         redisTemplate.setConnectionFactory(jedisConnectionFactory);
         redisTemplate.afterPropertiesSet();
         return redisTemplate;
