@@ -351,3 +351,22 @@ public class Proxy implements MethodInterceptor {
         target.targetMethod();
     }
 ```
+
+## 3.分析
+MethodInterceptor接口
+```java
+public interface MethodInterceptor extends Callback {
+    Object intercept(Object var1, Method var2, Object[] var3, MethodProxy var4) throws Throwable;
+}
+```
+这个接口只有一个intercept()方法，这个方法有4个参数：
+
+1）obj表示增强的对象，即实现这个接口类的一个对象；
+
+2）method表示要被拦截的方法；
+
+3）args表示要被拦截方法的参数；
+
+4）proxy表示要触发父类的方法对象
+
+CGLIB原理：动态生成一个要代理类的子类，子类重写要代理的类的所有不是final的方法。在子类中采用方法拦截的技术拦截所有父类方法的调用，顺势织入横切逻辑。它比使用java反射的JDK动态代理要快
