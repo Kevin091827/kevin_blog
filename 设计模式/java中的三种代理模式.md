@@ -153,8 +153,11 @@ public class ProxyClass {
                                           InvocationHandler h)
         throws IllegalArgumentException
     {
+        //判空
         Objects.requireNonNull(h);
+        //复制一份接口对象，初始状态一样，但是之后状态可以相互改变导致不一样
         final Class<?>[] intfs = interfaces.clone();
+        //进行一些安全性检查
         final SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             checkProxyAccess(Reflection.getCallerClass(), loader, intfs);
@@ -165,6 +168,7 @@ public class ProxyClass {
                 checkNewProxyPermission(Reflection.getCallerClass(), cl);
             }
 
+            //获得代理类构造器对象
             final Constructor<?> cons = cl.getConstructor(constructorParams);
             final InvocationHandler ih = h;
             if (!Modifier.isPublic(cl.getModifiers())) {
@@ -175,6 +179,7 @@ public class ProxyClass {
                     }
                 });
             }
+            //通过反射构造代理对象
             return cons.newInstance(new Object[]{h});
         } catch (IllegalAccessException|InstantiationException e) {
             throw new InternalError(e.toString(), e);
@@ -190,9 +195,111 @@ public class ProxyClass {
         }
     }
  ```
+ getProxyClass0():类似springbean工厂生产对象，有则从容器（缓存）中取出代理对象，无则通过代理工厂生产
+```java
+    private static Class<?> getProxyClass0(ClassLoader loader,
+                                           Class<?>... interfaces) {
 
+        // 实现接口数应小于65535                                
+        if (interfaces.length > 65535) {
+            throw new IllegalArgumentException("interface limit exceeded");
+        }
 
+        // 如果代理类创建，则返回缓存中的该类的副本；否则通过ProxyClassFactory创建代理类 
+        return proxyClassCache.get(loader, interfaces);
+    }
+```
+代理对象真正产生地
+```java
+private static final class ProxyClassFactory
+        implements BiFunction<ClassLoader, Class<?>[], Class<?>>
+    {
+        // prefix for all proxy class names
+        private static final String proxyClassNamePrefix = "$Proxy";
+
+        // next number to use for generation of unique proxy class names
+        private static final AtomicLong nextUniqueNumber = new AtomicLong();
+
+        @Override
+        public Class<?> apply(ClassLoader loader, Class<?>[] interfaces) {
+
+            Map<Class<?>, Boolean> interfaceSet = new IdentityHashMap<>(interfaces.length);
+            //验证代理接口
+            for (Class<?> intf : interfaces) {
+                Class<?> interfaceClass = null;
+                try {
+                    interfaceClass = Class.forName(intf.getName(), false, loader);
+                } catch (ClassNotFoundException e) {
+                }
+                if (interfaceClass != intf) {
+                    throw new IllegalArgumentException(
+                        intf + " is not visible from class loader");
+                }
+
+                if (!interfaceClass.isInterface()) {
+                    throw new IllegalArgumentException(
+                        interfaceClass.getName() + " is not an interface");
+                }
+       
+                if (interfaceSet.put(interfaceClass, Boolean.TRUE) != null) {
+                    throw new IllegalArgumentException(
+                        "repeated interface: " + interfaceClass.getName());
+                }
+            }
+            //生成的代理类的包名 
+            String proxyPkg = null;     
+            //代理类访问控制符: public ,final
+            int accessFlags = Modifier.PUBLIC | Modifier.FINAL;
+            
+            for (Class<?> intf : interfaces) {
+                int flags = intf.getModifiers();
+                //验证所有非公共的接口在同一个包内；公共的就无需处理
+                if (!Modifier.isPublic(flags)) {
+                     //生成包名和类名的逻辑，包名默认是com.sun.proxy，类名默认是$Proxy 加上一个自增的整数值
+                    accessFlags = Modifier.FINAL;
+                    String name = intf.getName();
+                    int n = name.lastIndexOf('.');
+                    String pkg = ((n == -1) ? "" : name.substring(0, n + 1));
+                    if (proxyPkg == null) {
+                        proxyPkg = pkg;
+                    } else if (!pkg.equals(proxyPkg)) {
+                        throw new IllegalArgumentException(
+                            "non-public interfaces from different packages");
+                    }
+                }
+            }
+            //生成包名和类名的逻辑，包名默认是com.sun.proxy，类名默认是$Proxy 加上一个自增的整数值
+            if (proxyPkg == null) {
+                // if no non-public proxy interfaces, use com.sun.proxy package
+                proxyPkg = ReflectUtil.PROXY_PACKAGE + ".";
+            }
+
+            long num = nextUniqueNumber.getAndIncrement();
+            //代理类全限定名，如com.sun.proxy.$Proxy0.calss
+            String proxyName = proxyPkg + proxyClassNamePrefix + num;
+            //核心部分，生成代理类的字节码
+            byte[] proxyClassFile = ProxyGenerator.generateProxyClass(
+                proxyName, interfaces, accessFlags);
+            try {
+                //把代理类加载到JVM中
+                return defineClass0(loader, proxyName,
+                                    proxyClassFile, 0, proxyClassFile.length);
+            } catch (ClassFormatError e) {
+
+                throw new IllegalArgumentException(e.toString());
+            }
+        }
+    }
+```
 # 三，cglib代理
+## 1.介绍
+CGLIB是一个强大的高性能的代码生成包。它广泛的被许多AOP的框架使用，例如Spring AOP为他们提供
+
+方法的interception（拦截）。CGLIB包的底层是通过使用一个小而快的字节码处理框架ASM，来转换字节码并生成新的类。
+
+## 2.实现
+
+
 抽象者：
 ```java
 public interface ITarget {
