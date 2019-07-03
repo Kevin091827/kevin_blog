@@ -198,8 +198,11 @@ public class BoundedQueue {
             //释放该节点对应线程的同步状态
             int savedState = fullyRelease(node);
             int interruptMode = 0;
+            //判断节点是否还在同步队列
             while (!isOnSyncQueue(node)) {
+                //在同步队列则阻塞该线程
                 LockSupport.park(this);
+                //如果中断则跳出循环
                 if ((interruptMode = checkInterruptWhileWaiting(node)) != 0)
                     break;
             }
