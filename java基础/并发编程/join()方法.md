@@ -146,3 +146,134 @@ main线程状态---------->RUNNABLE
 子线程thread1在调用join()方法后，thread1正常执行run，但是当前thread1所在的main线程就会被无限期阻塞，只有当thread1执行完，main线程才能恢复正常执行
 
 因此，join() 方法使得调用该方法的那段代码所在的线程暂时阻塞
+
+### sleep()
+
+sleep方法是和join()方法比较相似的方法
+
+先看一个demo
+```java
+@Slf4j
+public class SleepDemo {
+
+    static class ThreadA extends Thread{
+
+        @Override
+        public void run() {
+            synchronized (this){
+                log.info("------>"+this.getName());
+                log.info("------>"+Thread.currentThread().getName()+"begin:"+System.currentTimeMillis());
+
+                log.info("------>"+Thread.currentThread().getName()+"end:"+System.currentTimeMillis());
+            }
+        }
+    }
+
+    static class ThreadB extends Thread{
+
+        private ThreadA threadA;
+
+        public ThreadB(ThreadA threadA) {
+            this.threadA = threadA;
+        }
+
+        @Override
+        public void run() {
+            synchronized (threadA){
+                log.info("------>"+Thread.currentThread().getName()+"begin:"+System.currentTimeMillis());
+                try {
+                    Thread.sleep(4000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                log.info("------>"+Thread.currentThread().getName()+"end:"+System.currentTimeMillis());
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+
+        ThreadA threadA = new ThreadA();
+        threadA.setName("AAAAAAAAAAAA");
+        ThreadB threadB = new ThreadB(threadA);
+        threadB.setName("BBBBBBBBBBBB");
+
+        threadB.start();
+        threadA.start();
+    }
+}
+```
+
+结果：
+```
+22:17:19.259 [BBBBBBBBBBBB] INFO com.kevin.demo.base_of_cconcurrency.SleepDemo - ------>BBBBBBBBBBBBbegin:1562595439257
+22:17:23.263 [BBBBBBBBBBBB] INFO com.kevin.demo.base_of_cconcurrency.SleepDemo - ------>BBBBBBBBBBBBend:1562595443263
+22:17:23.263 [AAAAAAAAAAAA] INFO com.kevin.demo.base_of_cconcurrency.SleepDemo - ------>AAAAAAAAAAAA
+22:17:23.263 [AAAAAAAAAAAA] INFO com.kevin.demo.base_of_cconcurrency.SleepDemo - ------>AAAAAAAAAAAAbegin:1562595443263
+22:17:23.263 [AAAAAAAAAAAA] INFO com.kevin.demo.base_of_cconcurrency.SleepDemo - ------>AAAAAAAAAAAAend:1562595443263
+```
+可以看到，先执行的线程BBBBBBBBB的run方法，执行线程BBBBBBBB的run方法时，对线程AAAAAA对象加锁，只有一个线程能进入该方法执行，线程AAAAAAAAAA执行run方法时，因为线程AAAAAAAAAAA也对自己加锁，线程BBBBBBBBB还没有释放锁，所以线程AAAAAAAAAA不能执行其run方法中的同步块，需要等线程BBBBBBBBBB执行完成释放锁才能执行
+
+所以，可以得到一个结论：
+
+即 Thread.sleep(long) 方法是不释放对象锁的，并且使当前线程进入阻塞状态
+
+### join和sleep的区别
+
+探究下和join()方法的区别，从上文中可以得到，join方法是当前线程执行join方法之后，会阻塞其所在的线程，等到当前执行join方法的线程执行完成，才会恢复正常执行状态
+
+
+在上文中，我们可以得到，sleep()可以使线程休眠一段时间，使当前线程进入阻塞状态
+```java
+@Slf4j
+public class SleepDemo {
+
+    static class ThreadA extends Thread{
+
+        @Override
+        public void run() {
+            synchronized (this){
+                log.info("------>"+this.getName());
+                log.info("------>"+Thread.currentThread().getName()+"begin:"+System.currentTimeMillis());
+
+                log.info("------>"+Thread.currentThread().getName()+"end:"+System.currentTimeMillis());
+            }
+        }
+    }
+
+    static class ThreadB extends Thread{
+
+        private ThreadA threadA;
+
+        public ThreadB(ThreadA threadA) {
+            this.threadA = threadA;
+        }
+
+        @Override
+        public void run() {
+            synchronized (threadA){
+                log.info("------>"+Thread.currentThread().getName()+"begin:"+System.currentTimeMillis());
+                try {
+                    log.info("-------->before: "+threadA.isAlive());
+                    threadA.join();
+                    log.info("---------->after: "+threadA.isAlive());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                log.info("------>"+Thread.currentThread().getName()+"end:"+System.currentTimeMillis());
+            }
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+
+        ThreadA threadA = new ThreadA();
+        threadA.setName("AAAAAAAAAAAA");
+        ThreadB threadB = new ThreadB(threadA);
+        threadB.setName("BBBBBBBBBBBB");
+
+        threadB.start();
+        threadA.start();
+    }
+}
+```
