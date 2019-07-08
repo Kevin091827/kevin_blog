@@ -224,6 +224,8 @@ public class SleepDemo {
 
 
 在上文中，我们可以得到，sleep()可以使线程休眠一段时间，使当前线程进入阻塞状态
+
+通过一个demo，比较两个方法的差异
 ```java
 @Slf4j
 public class SleepDemo {
@@ -277,3 +279,17 @@ public class SleepDemo {
     }
 }
 ```
+和上文中的demo，只是做了些少改变
+
+可以看到结果如下：
+```
+22:45:59.359 [BBBBBBBBBBBB] INFO com.kevin.demo.base_of_cconcurrency.SleepDemo - ------>BBBBBBBBBBBBbegin:1562597159357
+22:45:59.363 [BBBBBBBBBBBB] INFO com.kevin.demo.base_of_cconcurrency.SleepDemo - -------->before: true
+22:45:59.363 [AAAAAAAAAAAA] INFO com.kevin.demo.base_of_cconcurrency.SleepDemo - ------>AAAAAAAAAAAA
+22:45:59.363 [AAAAAAAAAAAA] INFO com.kevin.demo.base_of_cconcurrency.SleepDemo - ------>AAAAAAAAAAAAbegin:1562597159363
+22:45:59.363 [AAAAAAAAAAAA] INFO com.kevin.demo.base_of_cconcurrency.SleepDemo - ------>AAAAAAAAAAAAend:1562597159363
+22:45:59.364 [BBBBBBBBBBBB] INFO com.kevin.demo.base_of_cconcurrency.SleepDemo - ---------->after: false
+22:45:59.364 [BBBBBBBBBBBB] INFO com.kevin.demo.base_of_cconcurrency.SleepDemo - ------>BBBBBBBBBBBBend:1562597159364
+```
+可以得出，线程B会在先执行，但是之前如果使用sleep方法的话，线程B持有线程A对象的对象锁，只有当线程B执行完成并且释放锁，线程A才能执行其run方法，但是这个替换为join方法后，感觉上是线程B执行一会，然后线程A执行，到线程A执行完成并销毁，线程B继续执行，线程A之所以能执行，完全是线程B在执行join方法时，释放了锁，join() 方法是释放锁，而且和 wait() 方法的作用类似
+
