@@ -10,6 +10,7 @@
 3. [归并排序和快速排序](https://blog.csdn.net/weixin_41922289/article/details/89334243)
 4. [堆排序](https://blog.csdn.net/weixin_41922289/article/details/89285521)
 5. [插入排序和希尔排序](https://blog.csdn.net/weixin_41922289/article/details/89151737)
+6. [选择排序](https://blog.csdn.net/weixin_41922289/article/details/95874630)
 
 
 #### 2.分类
