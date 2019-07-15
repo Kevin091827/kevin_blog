@@ -93,7 +93,7 @@ java se5前，java程序是依靠synchronized关键字实现锁功能的，但�
 
 ### 同步器提供的模板方法
 ```java
-      //独占式获取同步状态
+    //独占式获取同步状态
      void acquire(int arg);
 
     //独占式获取同步状态(可中断)
@@ -336,3 +336,4 @@ static final class Node {
 头结点是通过获取同步状态成功的线程来设置的，只有一个线程，因此不需CAS设置
 
 尾节点需要CAS设置，保证线程安全
+
