@@ -63,4 +63,66 @@ public ArrayList() {
         }
     }
 ```
+## 2.数据插入
+
+因为ArrayList是基于数组实现的，数组呢，又是固定容量的，那么，在数据添加的问题上必然会涉及到扩容的问题，毕竟，默认大小只有10而已
+
+**先看看ArrayList的扩容操作**
+
+```java
+    private void grow(int minCapacity) {
+        // 原来的数组容量 = 数组长度
+        int oldCapacity = elementData.length;
+        // 新的数组容量 = 原数组容量+原数组容量/2
+        int newCapacity = oldCapacity + (oldCapacity >> 1);
+        //判断下传进来的最小容量 （最小容量 = 当前数组元素数目 + 1）
+        // 如果比当前新数组容量小，则使用最容量
+        if (newCapacity - minCapacity < 0)
+            newCapacity = minCapacity;
+        //如果判断当前新容量是否超过最大的数组容量 MAX_ARRAY_SIZE =  Integer.MAX_VALUE - 8
+        if (newCapacity - MAX_ARRAY_SIZE > 0)
+            newCapacity = hugeCapacity(minCapacity);
+        //开始扩容
+        elementData = Arrays.copyOf(elementData, newCapacity);
+    }
+    
+    //如果判断当前新容量是否超过最大的数组容量 MAX_ARRAY_SIZE =  Integer.MAX_VALUE - 8
+    private static int hugeCapacity(int minCapacity) {
+        if (minCapacity < 0) // overflow
+            throw new OutOfMemoryError();
+        //如果超多最大数组容量则使用Integer的最大数值，否则还是使用最大数组容量
+        return (minCapacity > MAX_ARRAY_SIZE) ?
+            Integer.MAX_VALUE :
+            MAX_ARRAY_SIZE;
+    }
+```
+
+在谈数组拷贝
+```java
+    elementData = Arrays.copyOf(elementData, newCapacity);
+
+    //参数情况：原数组，新的数组长度
+    public static <T> T[] copyOf(T[] original, int newLength) {
+        return (T[]) copyOf(original, newLength, original.getClass());
+    }
+
+    //参数情况：原数组，新数组长度，数组类型
+    public static <T,U> T[] copyOf(U[] original, int newLength, Class<? extends T[]> newType) {
+        @SuppressWarnings("unchecked")
+        //判断当前数组类型是不是Object[]，根据指定类型构建数组（反射）
+        T[] copy = ((Object)newType == (Object)Object[].class)
+            ? (T[]) new Object[newLength]
+            : (T[]) Array.newInstance(newType.getComponentType(), newLength);
+        //本地方法：参数情况：（原数组， 原数组的开始位置， 目标数组， 目标数组的开始位置， 拷贝个数）
+        System.arraycopy(original, 0, copy, 0,
+                         Math.min(original.length, newLength));
+        return copy;
+    }
+```
+copyOf方法里的copy已经是扩容完成的数组，但是还是一个没有任何元素的数组，而下边的
+```java
+        System.arraycopy(original, 0, copy, 0,
+                         Math.min(original.length, newLength));
+```
+则将原数组中的元素拷贝到扩容完成的数组
 
