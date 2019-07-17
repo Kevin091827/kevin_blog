@@ -126,3 +126,126 @@ copyOf方法里的copy已经是扩容完成的数组，但是还是一个没有�
 ```
 则将原数组中的元素拷贝到扩容完成的数组
 
+扩容1.5倍
+
+
+**扩容流程图**
+
+判断是否需要扩容，传入最小容量 = 当前数组容量 + 1
+```java
+    ensureCapacityInternal(size + 1); 
+
+    //判断是否需要扩容
+    private void ensureCapacityInternal(int minCapacity) {
+        //先计算容量
+        ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));
+    }
+```
+计算容量
+```java
+    private static int calculateCapacity(Object[] elementData, int minCapacity) {
+        //如果是空数组，则返回默认容量10和传进来的最小容量的最大值
+        if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+            return Math.max(DEFAULT_CAPACITY, minCapacity);
+        }
+        return minCapacity;
+    }
+```
+开始扩容
+```java
+    private void ensureExplicitCapacity(int minCapacity) {
+        //修改数增+1 快速失败机制
+        modCount++;
+
+        //如果增加后的数组容量（size+1）> 原数组容量则需要扩容
+        if (minCapacity - elementData.length > 0)
+            //扩容
+            grow(minCapacity);
+    }
+```
+然后具体扩容的方法和步骤就走上面扩容的流程
+
+
+**了解完扩容，接下来看数据的添加会容易理解些**
+
+再线性表末端增加指定元素
+```java
+    public boolean add(E e) {
+        //判断是否需要扩容
+        ensureCapacityInternal(size + 1);  // Increments modCount!!
+        //线性表末端新增元素
+        elementData[size++] = e;
+        return true;
+    }
+```
+
+在线性表指定位置增加指定元素
+```java
+    public void add(int index, E element) {
+        //检查指定下标是否越界
+        rangeCheckForAdd(index);
+        //判断是否需要扩容
+        ensureCapacityInternal(size + 1);  // Increments modCount!!
+        //移动线性表中指定下标后一位开始到最后一个元素中的元素，移动一位
+        System.arraycopy(elementData, index, elementData, index + 1,
+                         size - index);
+        //空出来的位置即index下标位置则插入新元素
+        elementData[index] = element;
+        //数组容量+1
+        size++;
+    }
+```
+
+## 3.数据删除
+
+指定下标删除
+```java
+    public E remove(int index) {
+        //检测下标是否越界
+        rangeCheck(index);
+        //修改数+1
+        modCount++;
+        //先取出要删除的元素（根据索引找出元素）
+        E oldValue = elementData(index);
+        //要移动的元素数量，即将index后得元素（不包括index）先向index方向移动一位，覆盖要被删除的index下标对应的元素
+        int numMoved = size - index - 1;
+        //要移动的元素数量>0则表示有元素要删除
+        if (numMoved > 0)
+            System.arraycopy(elementData, index+1, elementData, index,numMoved);
+        //清除最后一个元素
+        elementData[--size] = null; // clear to let GC do its work
+        //返回被删除元素的数值
+        return oldValue;
+    }
+```
+指定元素删除
+```java
+    public boolean remove(Object o) {
+        if (o == null) {
+            for (int index = 0; index < size; index++)
+                if (elementData[index] == null) {
+                    fastRemove(index);
+                    return true;
+                }
+        } else {
+            for (int index = 0; index < size; index++)
+                if (o.equals(elementData[index])) {
+                    fastRemove(index);
+                    return true;
+                }
+        }
+        return false;
+    }
+```
+
+指定下标快速删除
+```java
+    private void fastRemove(int index) {
+        modCount++;
+        int numMoved = size - index - 1;
+        if (numMoved > 0)
+            System.arraycopy(elementData, index+1, elementData, index,
+                             numMoved);
+        elementData[--size] = null; // clear to let GC do its work
+    }
+```
