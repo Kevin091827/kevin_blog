@@ -321,10 +321,136 @@ ArrayList中的迭代器是以内部类的形式存在
 
 先关注几个重点变量
 ```java
-        int cursor;       // 后继指针
-        int lastRet = -1; // 前驱指针
+        int cursor;       // 指向下一个被迭代元素的指针（或者说是其下标）
+        int lastRet = -1; // 指向迭代器最后一次取出的元素的位置。或没有元素时取-1
         int expectedModCount = modCount;//修改期望值
 ```
 关于expectedModCount和modCount的补充
 
 在集合的add，remove等操作时，modCount都会+1，而在集合遍历中只有保证expectedModCount = modCount才算是合法的遍历，不然会报错ConcurrentModificationException
+
+```java
+        final void checkForComodification() {
+            if (modCount != expectedModCount)
+                throw new ConcurrentModificationException();
+        }
+```
+
+看看合法遍历和不合法的遍历
+
+不合法遍历，在遍历过程中使用集合的add，remove方法
+```java
+List<Integer> list = new ArrayList<>();
+Iterator iterator = list.iterator();
+while(iterator.hasNext()){
+    int i = iterator.next();//遍历
+    if(i == 12){
+        list.remove(12);//集合的add，remove不能保证expectedModCount = modCount
+    }
+}
+```
+合法遍历，在遍历过程中使用迭代器的add，remove方法
+```java
+List<Integer> list = new ArrayList<>();
+Iterator iterator = list.iterator();
+while(iterator.hasNext()){
+    iterator.next();//遍历
+    if(i == 12){
+        iterator.remove(); //迭代器的remove可以保证expectedModCount = modCount
+    }
+}
+```
+所以在进行集合元素的遍历时最好还是使用迭代的remove和add方法，更加符合规范和安全
+
+
+**深究迭代器的remove和hasNext，和next方法**
+
+hasNext()
+```java
+        public boolean hasNext() {
+            //判断指向当前迭代位置的（下标）的指针是否已经指向数组末尾
+            return cursor != size;
+        }
+```
+next()
+```java
+        public E next() {
+            checkForComodification();
+            // i = 当前迭代位置下标
+            int i = cursor;
+            //检查i的合法性
+            if (i >= size)
+                throw new NoSuchElementException();
+            Object[] elementData = ArrayList.this.elementData;
+            if (i >= elementData.length)
+                throw new ConcurrentModificationException();
+            //每迭代一次，i往后移动一位，cursor+1
+            cursor = i + 1;
+            //根据下标取元素
+            return (E) elementData[lastRet = i];
+        }
+```
+
+
+remove()
+```java
+        public void remove() {
+            //检查前驱指针是否合法
+            if (lastRet < 0)
+                throw new IllegalStateException();
+            //检查期望修改值是否等于修改值
+            checkForComodification();
+
+            try {
+                //其实还是使用arrayList的remove(),此时expectedModCount和modCount是不相等的
+                ArrayList.this.remove(lastRet);
+                //移动指针，后继指针指向刚刚删除元素的前驱
+                cursor = lastRet;
+                lastRet = -1;
+                //更新expectedModCount，保证其相等
+                expectedModCount = modCount;
+            } catch (IndexOutOfBoundsException ex) {
+                throw new ConcurrentModificationException();
+            }
+        }
+```
+看完最基本的迭代器，可以看看list自身自定义的一个迭代器
+```java
+private class ListItr extends Itr implements ListIterator<E> {
+        ListItr(int index) {
+            super();
+            cursor = index;
+        }
+        ...
+```
+可以看出，该迭代器是一个从指定位置开始进行迭代的迭代器，而且该迭代器还实现了基本迭代器没有的set 和 add 方法
+
+```java
+        public void set(E e) {
+            if (lastRet < 0)
+                throw new IllegalStateException();
+            checkForComodification();
+
+            try {
+                ArrayList.this.set(lastRet, e);
+            } catch (IndexOutOfBoundsException ex) {
+                throw new ConcurrentModificationException();
+            }
+        }
+
+        public void add(E e) {
+            checkForComodification();
+
+            try {
+                int i = cursor;
+                ArrayList.this.add(i, e);
+                cursor = i + 1;
+                lastRet = -1;
+                expectedModCount = modCount;
+            } catch (IndexOutOfBoundsException ex) {
+                throw new ConcurrentModificationException();
+            }
+        }
+```
+
+ArrayList源码中的基本知识算是整理完了吧，可能会有不全，但是还是想说，长文警告！
