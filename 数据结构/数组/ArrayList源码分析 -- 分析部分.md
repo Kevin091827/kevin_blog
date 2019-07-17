@@ -260,5 +260,71 @@ copyOf方法里的copy已经是扩容完成的数组，但是还是一个没有�
     }
 ```
 
+## 4.ArrayList的迭代器
+
+**先从一个遍历问题开始看起**
+
+java集合的遍历细分可以有三种方式
+
+1.简单循环遍历
+```java
+List<Integer> list = new ArrayList<>();
+for(int i = 0;i<list.size();i++){
+    //遍历
+}
+```
+2.使用迭代器遍历
+```java
+List<Integer> list = new ArrayList<>();
+Iterator iterator = list.iterator();
+while(iterator.hasNext()){
+    iterator.next();//遍历
+}
+```
+3.使用增强for循环遍历
+```java
+List<Integer> list = new ArrayList<>();
+for(int i : list){
+    //遍历
+}
+```
+
+在看使用迭代器遍历和使用增强for循环遍历的差异
+
+能够使用增强for循环遍历的都是实现了Iterable接口的实现类
+该接口是对迭代器即Iterator的一个包装
+```java
+public interface Iterable<T> {
+    Iterator<T> iterator();
+}
+```
+
+为什么需要对其进行包装？
+
+因为Iterator是迭代器类，核心方法是hasNext(),next(),remove()都依赖于当前位置，如果集合类直接实现迭代器接口，则集合类需要维护多一个变量来指向当前迭代位置，不然当集合在方法间传递时，next执行的值即下一个迭代的值不能确定，但是，如果在Iterable的包装下，每次迭代都会返回一个新的从头开始的迭代器
 
 
+**获取迭代器**
+```java
+public Iterator<E> iterator() {
+        return new Itr();
+    }
+```
+ListIterator是Iterator的一个子接口
+```java
+public ListIterator<E> listIterator() {
+        return new ListItr(0);
+    }
+```
+
+ArrayList中的迭代器是以内部类的形式存在
+
+先关注几个重点变量
+```java
+        int cursor;       // 后继指针
+        int lastRet = -1; // 前驱指针
+        int expectedModCount = modCount;//修改期望值
+```
+关于expectedModCount和modCount的补充
+
+在集合的add，remove等操作时，modCount都会+1，而在集合遍历中只有保证expectedModCount = modCount才算是合法的遍历，不然会报错ConcurrentModificationException
