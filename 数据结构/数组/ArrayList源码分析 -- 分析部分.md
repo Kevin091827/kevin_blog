@@ -170,6 +170,7 @@ copyOf方法里的copy已经是扩容完成的数组，但是还是一个没有�
 
 再线性表末端增加指定元素
 ```java
+    //最坏时间复杂度：O(1)
     public boolean add(E e) {
         //判断是否需要扩容
         ensureCapacityInternal(size + 1);  // Increments modCount!!
@@ -181,6 +182,7 @@ copyOf方法里的copy已经是扩容完成的数组，但是还是一个没有�
 
 在线性表指定位置增加指定元素
 ```java
+    //最坏时间复杂度：O(N)
     public void add(int index, E element) {
         //检查指定下标是否越界
         rangeCheckForAdd(index);
@@ -200,6 +202,7 @@ copyOf方法里的copy已经是扩容完成的数组，但是还是一个没有�
 
 指定下标删除
 ```java
+    //最坏时间复杂度：O(N)
     public E remove(int index) {
         //检测下标是否越界
         rangeCheck(index);
@@ -218,29 +221,12 @@ copyOf方法里的copy已经是扩容完成的数组，但是还是一个没有�
         return oldValue;
     }
 ```
-指定元素删除
-```java
-    public boolean remove(Object o) {
-        if (o == null) {
-            for (int index = 0; index < size; index++)
-                if (elementData[index] == null) {
-                    fastRemove(index);
-                    return true;
-                }
-        } else {
-            for (int index = 0; index < size; index++)
-                if (o.equals(elementData[index])) {
-                    fastRemove(index);
-                    return true;
-                }
-        }
-        return false;
-    }
-```
-
 指定下标快速删除
 ```java
+    //最坏时间复杂度：O(N)
+    //只是一个私有方法，会跳过越界检查并且不会返回被删除元素的数值
     private void fastRemove(int index) {
+        //思路和根据指定下标删除的remove方法一样，只是缺少了越界的检查
         modCount++;
         int numMoved = size - index - 1;
         if (numMoved > 0)
@@ -249,3 +235,30 @@ copyOf方法里的copy已经是扩容完成的数组，但是还是一个没有�
         elementData[--size] = null; // clear to let GC do its work
     }
 ```
+指定元素删除  
+```java
+    //最坏时间复杂度：O(N^2)
+    public boolean remove(Object o) {
+        //判断要删除的元素是否是null,侧面反映ArrayList的add方法可以增加null元素
+        if (o == null) {
+            //如果是空，则遍历线性表找出所有null元素对应下标，并且根据下标快速删除
+            for (int index = 0; index < size; index++)
+                if (elementData[index] == null) {
+                    fastRemove(index);
+                    return true;
+                }
+        } else {
+            //否则则找出指定元素的下标，在根据下标快速删除指定元素
+            for (int index = 0; index < size; index++)
+                if (o.equals(elementData[index])) {
+                    fastRemove(index);
+                    return true;
+                }
+        }
+        //没有匹配元素则返回null
+        return false;
+    }
+```
+
+
+
