@@ -148,6 +148,7 @@ copyOf方法里的copy已经是扩容完成的数组，但是还是一个没有�
         if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
             return Math.max(DEFAULT_CAPACITY, minCapacity);
         }
+        //否则返回当前最小容量 ： 当前数组容量 + 1
         return minCapacity;
     }
 ```
@@ -165,6 +166,7 @@ copyOf方法里的copy已经是扩容完成的数组，但是还是一个没有�
 ```
 然后具体扩容的方法和步骤就走上面扩容的流程
 
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190719181922137.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80MTkyMjI4OQ==,size_16,color_FFFFFF,t_70)
 
 **了解完扩容，接下来看数据的添加会容易理解些**
 
