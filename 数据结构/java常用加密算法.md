@@ -259,55 +259,19 @@ public class Sha1Demo {
 
 #### 实现
 ```java
-/**
- * @Description:    java加密模块---AES加密
- * @Author:         Kevin
- * @CreateDate:     2019/5/2 2:08
- * @UpdateUser:     Kevin
- * @UpdateDate:     2019/5/2 2:08
- * @UpdateRemark:   修改内容
- * @Version: 1.0
- */
-public class AesDemo {
-
-     //指定字符编码
-    static Charset charset = Charset.forName("UTF-8");
-
-    /**
-     * 获取SecretKey(加密和解密都需要)
-     * @return
-     */
-    private static SecretKey getSecretKey(){
-        SecretKey secretKey = null;
-        try {
-            //获取key生成器
-            KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-            //获取随机数
-            SecureRandom secureRandom = new SecureRandom();
-            //key初始化
-            keyGenerator.init(secureRandom);
-            //获取key
-            secretKey = keyGenerator.generateKey();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return secretKey;
-    }
+public class AES {
 
     /**
      * AES加密
      * @param data
      * @return
      */
-    public static byte[] encrypt(String data){
+    public static byte[] encrypt(String data,String key){
         byte[] result = null;
         try {
-            //获取cipher
             Cipher cipher = Cipher.getInstance("AES");
-            //初始化cipher，并且指定模式
-            cipher.init( Cipher.ENCRYPT_MODE,getSecretKey());
-            //加密
-            result = cipher.doFinal(data.getBytes(charset));
+            cipher.init(Cipher.ENCRYPT_MODE,getSecretKey(key));
+            result = cipher.doFinal(data.getBytes());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -319,27 +283,146 @@ public class AesDemo {
      * @param data
      * @return
      */
-    public static String decrypt(byte[] data){
+    public static String decrypt(byte[] data,String key){
         String result = null;
         try {
             //获取cipher
             Cipher cipher = Cipher.getInstance("AES");
             //初始化cipher，并且指定模式
-            cipher.init( Cipher.DECRYPT_MODE,getSecretKey());
+            cipher.init( Cipher.DECRYPT_MODE,getSecretKey(key));
             //加密
-            result = new String(cipher.doFinal(data),charset);
+            result = new String(cipher.doFinal(data));
         } catch (Exception e) {
             e.printStackTrace();
         }
         return result;
     }
-}
 
+    /**
+     * 获得加密和解密所需的密钥
+     * @return
+     */
+    private static SecretKey getSecretKey(String key){
+        if (null == key || key.length() == 0) {
+            throw new NullPointerException("key not is null");
+        }
+        SecretKey secretKey = null;
+        try {
+            KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+            SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
+            secureRandom.setSeed(key.getBytes());
+            keyGenerator.init(128,secureRandom);
+            secretKey = keyGenerator.generateKey();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return secretKey;
+    }
+
+    public static void main(String[] args) {
+        String pwd = "123456789";
+        byte[] pwd1 = encrypt(pwd,"test");
+        System.out.println("----->"+pwd1);
+        System.out.println("----->"+decrypt(pwd1,"test"));
+    }
+}
 ```
 
 ## 非对称加密
 
 非对称加密算法是一种密钥的保密方法。 非对称加密算法需要两个密钥：公开密钥（publickey）和私有密钥（privatekey）。 公开密钥与私有密钥是一对，如果用公开密钥对数据进行加密，只有用对应的私有密钥才能解密；如果用私有密钥对数据进行加密，那么只有用对应的公开密钥才能解密。
+
+常见的非对称加密就是rsa加密算法
+
+使用公钥进行加密，私钥进行解密
+
+```java
+/**
+ * @Auther: Kevin
+ * @Date:
+ * @ClassName:RSA
+ * @Description: TODO
+ */
+public class RSA {
+
+    /**
+     * 公钥加密
+     * @param data
+     * @param publicKey
+     * @return
+     */
+    public static byte[] publicEncrytype(String data,PublicKey publicKey){
+        byte[] result = null;
+        try {
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.ENCRYPT_MODE,publicKey);
+            result = cipher.doFinal(data.getBytes("UTF-8"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    /**
+     * 私钥解密
+     * @param data
+     * @param privateKey
+     * @return
+     */
+    public static String privateDecrytypr(byte[] data,PrivateKey privateKey){
+        String result = null;
+        try {
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.DECRYPT_MODE,privateKey);
+            result = new String(cipher.doFinal(data),"utf-8");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    /**
+     * 获得公钥
+     * @param keyPair
+     * @return
+     */
+    private static PublicKey getPublicKey(KeyPair keyPair){
+        return keyPair.getPublic();
+    }
+
+    /**
+     * 获得私钥
+     * @param keyPair
+     * @return
+     */
+    private static PrivateKey getPrivateKey(KeyPair keyPair){
+        return keyPair.getPrivate();
+    }
+
+    /**
+     * 获得密钥对
+     * @return
+     */
+    private static KeyPair getKeyPair(){
+        KeyPair keyPair = null;
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            SecureRandom secureRandom = new SecureRandom();
+            keyPairGenerator.initialize(512,secureRandom);
+            keyPair = keyPairGenerator.generateKeyPair();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return keyPair;
+    }
+
+    public static void main(String[] args) {
+        KeyPair keyPair = getKeyPair();
+        System.out.println("---->"+publicEncrytype("123456789",getPublicKey(keyPair)).toString());
+        System.out.println("---->"+privateDecrytypr(publicEncrytype("123456789",getPublicKey(keyPair)),getPrivateKey(keyPair)));
+    }
+}
+```
 
 
 
