@@ -14,7 +14,21 @@ AVL平衡树：是一种在高度上相对平衡的二叉查找树，其平均�
 
 左右子树的高度差的绝对值不超过1
 
-### 2.树旋转
+### 2.节点高度
+
+```java
+    /**
+     * 求当前节点高度
+     * @param k
+     * @return
+     */
+    private int hight(AvlNode k){
+        return k == null ? -1 : k.hight;
+    }
+```
+
+
+### 3.树旋转
 
 在对二叉查找树进行插入删除之后如何保持平衡呢？答案就是通过树的旋转
 
@@ -177,8 +191,74 @@ AVL平衡树：是一种在高度上相对平衡的二叉查找树，其平均�
     }
 ```
 
-### 3.构造平衡树
+### 4.构造平衡树
+构造平衡树的方法和构造二叉查找树一样，只是多了平衡结构建立而已
+```java
+    /**
+     * 构建平衡树
+     * @param x
+     * @param root
+     * @return
+     */
+    public AvlNode insert(int x,AvlNode root){
+        if(root == null){
+            return new AvlNode(null,null,x);
+        }
+        if(x > root.val){
+            root.right = insert(x,root.right);
+        }else if(x < root.val){
+            root.left = insert(x,root.left);
+        }else{
+            root.val = x;
+        }
+       return balance(root);
+    }
+```
+
+### 5.删除平衡树中指定节点
+
+删除节点和二叉查找树一致，但是删除后，需要恢复平衡结构
 
 ```java
-
+    /**
+     * 删除平衡树中的指定节点
+     * @param x
+     * @param root
+     * @return
+     */
+    public AvlNode remove(int x,AvlNode root){
+        if(root == null){
+            return root;
+        }
+        //寻找指定节点
+        if(x > root.val){
+            root.right = remove(x,root.right);
+        }else if(x < root.val){
+            root.left = remove(x,root.left);
+        }else{
+            //找到了指定节点
+            //判断是否存在子节点，以及是单个子节点还是两个子节点
+            if(root.left != null && root.right != null){
+                //左右子节点都存在
+                //找出右子树中的最小值
+                root.val = findMin(root.right).val;
+                //转成一个子节点的情况
+                root.right = remove(root.val,root.right);
+            }else{
+                //存在一个子节点,不空则覆盖
+                if(root.left != null){
+                    root = root.left;
+                }
+                else if(root.right != null){
+                    root = root.right;
+                }
+                //叶节点情况
+                else {
+                    root = null;
+                }
+            }
+        }
+        //重新平衡
+        return balance(root);
+    }
 ```
