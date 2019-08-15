@@ -4,7 +4,7 @@
 
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20190523150451655.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80MTkyMjI4OQ==,size_16,color_FFFFFF,t_70)
 
-## 示例
+## 笔记
 ```conf
 ####################    全局块     ###############################
 ####################   作用     ###############################
@@ -64,7 +64,14 @@ http {
     #keepalive_timeout  0;
     keepalive_timeout  65;#设置连接超时时间
 
+    ###############文件压缩###########################
     #gzip  on;
+    #文件最小压缩长度，小于则不用压缩
+    #gzip_min_length 1;
+    #压缩等级
+    #gzip_comp_level 2;
+    #要压缩的文件类型
+    #gzip_types text/plain application/x-javascript text/css application/xml text/javascript application/x-httpd-php image/gif image/png
 
 
     ####################    server块     ###############################
@@ -158,4 +165,11 @@ http {
     #}
 
 }
+```
+
+## 反向代理配置
+对于一个本地的html文件
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190813112122414.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80MTkyMjI4OQ==,size_16,color_FFFFFF,t_70)s
+```java
+
 ```
