@@ -239,7 +239,7 @@ add(val)其实就是offer(val)的封装
         return result;
     }
 ```
-
+ 
 上面提到add()其实也是入队，但是remove()却不是出队
 ```java  
     public boolean remove(Object o) {
