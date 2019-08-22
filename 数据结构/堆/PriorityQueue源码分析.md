@@ -130,7 +130,7 @@ jdk优先队列中默认是最小堆，需要通过堆的子节点和父节点�
 ```java
     private void siftDownComparable(int k, E x) {
         Comparable<? super E> key = (Comparable<? super E>)x;
-        //相当于size / 2，half相当于第一个叶子节点  
+        //相当于size / 2，half相当于父节点  
         int half = size >>> 1;        // loop while a non-leaf
         //如果小于half，则为非叶子节点，需要进行调整
         while (k < half) {
