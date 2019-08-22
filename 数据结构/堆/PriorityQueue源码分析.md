@@ -15,7 +15,7 @@ PriorityQueue是一个优先队列，传统的队列是先入先出FIFO模型，
 ```
 # 构造方法
 
-默认构造是数组长度为11的堆，jdk优先队列中默认是最大堆，即实现的自然排序是升序，待会在具体说
+默认构造是数组长度为11的堆，jdk优先队列中默认是最小堆，即实现的自然排序是升序，待会在具体说
 ```java
     //默认队列长度
     private static final int DEFAULT_INITIAL_CAPACITY = 11;
@@ -109,7 +109,7 @@ private void initFromCollection(Collection<? extends E> c) {
 
 # 建堆
 
-jdk优先队列中默认是最大堆，需要通过堆的子节点和父节点相互比较，交换，构建堆结构
+jdk优先队列中默认是最小堆，需要通过堆的子节点和父节点相互比较，交换，构建堆结构
 
 ```java
     private void heapify() {
